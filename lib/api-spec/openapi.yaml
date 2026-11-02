@@ -1,0 +1,792 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: Deterministic, synthetic GridPulse Copilot demonstration API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: gridpulse
+    description: Synthetic training simulation
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [gridpulse]
+      summary: Get demo status and recent traces
+      responses:
+        "200":
+          description: Demo dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+  /copilot/scenarios:
+    get:
+      operationId: listScenarios
+      tags: [gridpulse]
+      summary: List synthetic incident scenarios
+      responses:
+        "200":
+          description: Synthetic scenarios
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Scenario"
+  /copilot/run:
+    post:
+      operationId: runCopilot
+      tags: [gridpulse]
+      summary: Run a deterministic, safety-gated demo brief
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CopilotRunInput"
+      responses:
+        "200":
+          description: Structured simulation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CopilotRunResult"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /knowledge/documents:
+    get:
+      operationId: listKnowledgeDocuments
+      tags: [gridpulse]
+      summary: List synthetic demo knowledge documents
+      responses:
+        "200":
+          description: Synthetic knowledge documents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/KnowledgeDocument"
+  /evaluation/cases:
+    get:
+      operationId: listEvaluationCases
+      tags: [gridpulse]
+      summary: List deterministic evaluation case definitions
+      responses:
+        "200":
+          description: Case definitions only; no evaluation run or observed outcomes are produced
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvaluationCaseCollection"
+  /evaluation/run:
+    post:
+      operationId: runEvaluation
+      tags: [gridpulse]
+      summary: Run the compact deterministic evaluation suite
+      responses:
+        "200":
+          description: Actual evaluation results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvaluationResult"
+  /traces:
+    get:
+      operationId: listTraces
+      tags: [gridpulse]
+      summary: List recent in-memory demo traces
+      responses:
+        "200":
+          description: Recent local traces
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Trace"
+  /data/catalog:
+    get:
+      operationId: getDataCatalog
+      tags: [data]
+      summary: Get catalog totals and recent data activity
+      responses:
+        "200":
+          description: Current synthetic data catalog summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataCatalogSummary"
+  /data/datasets:
+    get:
+      operationId: listDataSets
+      tags: [data]
+      summary: Search and paginate catalog datasets
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string, maxLength: 120 }
+        - name: category
+          in: query
+          schema: { type: string, maxLength: 80 }
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 25 }
+      responses:
+        "200":
+          description: Paginated catalog datasets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatasetPage"
+  /data/datasets/{datasetId}:
+    get:
+      operationId: getDataset
+      tags: [data]
+      summary: Get dataset metadata and a small sample
+      parameters:
+        - name: datasetId
+          in: path
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 80 }
+      responses:
+        "200":
+          description: Dataset details and latest version
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatasetDetail"
+        "404":
+          description: Dataset not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /data/datasets/preview:
+    get:
+      operationId: previewDataset
+      tags: [data]
+      summary: Read a bounded page of dataset records
+      parameters:
+        - name: datasetId
+          in: query
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 80 }
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+        - name: pageSize
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 25 }
+      responses:
+        "200":
+          description: Bounded dataset preview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatasetPage"
+  /data/datasets/{datasetId}/versions:
+    get:
+      operationId: listDatasetVersions
+      tags: [data]
+      summary: List immutable dataset versions
+      parameters:
+        - name: datasetId
+          in: path
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 80 }
+      responses:
+        "200":
+          description: Dataset version summaries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DatasetVersion"
+  /data/datasets/{datasetId}/lineage:
+    get:
+      operationId: getDatasetLineage
+      tags: [data]
+      summary: Show recorded sources and transformations
+      parameters:
+        - name: datasetId
+          in: path
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 80 }
+      responses:
+        "200":
+          description: Recorded lineage events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LineageEvent"
+    patch:
+      operationId: updateDatasetMetadata
+      tags: [data]
+      summary: Update editable dataset metadata
+      parameters:
+        - name: datasetId
+          in: path
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 80 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DatasetMetadataUpdate"
+      responses:
+        "200":
+          description: Updated dataset metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dataset"
+        "400":
+          description: Invalid metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /data/imports:
+    post:
+      operationId: importDataset
+      tags: [data]
+      summary: Validate and create a dataset from CSV
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DatasetImportInput"
+      responses:
+        "201":
+          description: Imported synthetic dataset
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatasetImportResult"
+        "400":
+          description: Invalid or unsupported import
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /data/datasets/{datasetId}/quality/run:
+    post:
+      operationId: runQualityCheck
+      tags: [data]
+      summary: Run deterministic quality checks on the latest version
+      parameters:
+        - name: datasetId
+          in: path
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 80 }
+      responses:
+        "200":
+          description: Quality report with technical checks only
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QualityReport"
+  /data/pipelines/execute:
+    post:
+      operationId: executeDataPipeline
+      tags: [data]
+      summary: Execute a constrained, validated transformation plan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PipelineExecutionInput"
+      responses:
+        "201":
+          description: Pipeline execution and curated output
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PipelineRun"
+        "400":
+          description: Invalid or unsupported transformation plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /data/analyst/ask:
+    post:
+      operationId: askDataAnalyst
+      tags: [data]
+      summary: Answer a bounded question with deterministic dataset analysis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DataAnalystInput"
+      responses:
+        "200":
+          description: Reproducible answer with dataset evidence and limitations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataAnalystResult"
+        "400":
+          description: Unsupported analysis request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /data/observability:
+    get:
+      operationId: getDataObservability
+      tags: [data]
+      summary: Get current catalog freshness and quality health
+      responses:
+        "200":
+          description: Observability measures derived from stored records
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataObservability"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+    Scenario:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        assetId: { type: string }
+        location: { type: string }
+        weather: { type: string }
+        incidentNote: { type: string }
+      required: [id, title, description, assetId, location, weather, incidentNote]
+    CopilotRunInput:
+      type: object
+      properties:
+        scenarioId: { type: string, minLength: 1, maxLength: 80 }
+        prompt: { type: string, minLength: 1, maxLength: 800 }
+      required: [scenarioId, prompt]
+    KnowledgeDocument:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        kind: { type: string }
+        description: { type: string }
+        content: { type: string }
+        sourceLabel: { type: string }
+        sourceUrl: { type: ["string", "null"] }
+        validationStatus: { type: string }
+      required: [id, title, kind, description, content, sourceLabel, sourceUrl, validationStatus]
+    Citation:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        kind: { type: string }
+        excerpt: { type: string }
+        sourceLabel: { type: string }
+        score: { type: number }
+        validationStatus: { type: string }
+      required: [id, title, kind, excerpt, sourceLabel, score, validationStatus]
+    WorkflowStep:
+      type: object
+      properties:
+        id: { type: string }
+        label: { type: string }
+        status:
+          type: string
+          enum: [complete, blocked, abstained]
+      required: [id, label, status]
+    RetrievalRanking:
+      type: object
+      properties:
+        documentId: { type: string }
+        rank: { type: integer }
+        score: { type: number }
+      required: [documentId, rank, score]
+    RetrievalDiagnostics:
+      type: object
+      properties:
+        method: { type: string }
+        keywordRankings:
+          type: array
+          items: { $ref: "#/components/schemas/RetrievalRanking" }
+        localRankings:
+          type: array
+          items: { $ref: "#/components/schemas/RetrievalRanking" }
+        fusedRankings:
+          type: array
+          items: { $ref: "#/components/schemas/RetrievalRanking" }
+      required: [method, keywordRankings, localRankings, fusedRankings]
+    CopilotRunResult:
+      type: object
+      properties:
+        traceId: { type: string }
+        outcome:
+          type: string
+          enum: [grounded, abstained, blocked]
+        intent: { type: string }
+        summary: { type: string }
+        facts:
+          type: array
+          items: { type: string }
+        assumptions:
+          type: array
+          items: { type: string }
+        missingInformation:
+          type: array
+          items: { type: string }
+        citations:
+          type: array
+          items: { $ref: "#/components/schemas/Citation" }
+        retrieval: { $ref: "#/components/schemas/RetrievalDiagnostics" }
+        steps:
+          type: array
+          items: { $ref: "#/components/schemas/WorkflowStep" }
+        durationMs: { type: number }
+        safetyNotice: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+      required: [traceId, outcome, intent, summary, facts, assumptions, missingInformation, citations, retrieval, steps, durationMs, safetyNotice, createdAt]
+    Trace:
+      type: object
+      properties:
+        id: { type: string }
+        query: { type: string }
+        outcome:
+          type: string
+          enum: [grounded, abstained, blocked]
+        retrievedDocumentIds:
+          type: array
+          items: { type: string }
+        durationMs: { type: number }
+        createdAt: { type: string, format: date-time }
+        steps:
+          type: array
+          items: { $ref: "#/components/schemas/WorkflowStep" }
+      required: [id, query, outcome, retrievedDocumentIds, durationMs, createdAt, steps]
+    EvaluationCase:
+      type: object
+      properties:
+        id: { type: string }
+        query: { type: string }
+        expected:
+          type: string
+          enum: [grounded, abstained, blocked]
+        actual:
+          type: string
+          enum: [grounded, abstained, blocked]
+        passed: { type: boolean }
+        explanation: { type: string }
+      required: [id, query, expected, actual, passed, explanation]
+    EvaluationResult:
+      type: object
+      properties:
+        total: { type: integer }
+        passed: { type: integer }
+        failed: { type: integer }
+        sampleSize: { type: integer }
+        runAt: { type: string, format: date-time }
+        cases:
+          type: array
+          items: { $ref: "#/components/schemas/EvaluationCase" }
+      required: [total, passed, failed, sampleSize, runAt, cases]
+    EvaluationCaseCollection:
+      type: array
+      items:
+        $ref: "#/components/schemas/EvaluationCaseDefinition"
+    EvaluationCaseDefinition:
+      type: object
+      properties:
+        id: { type: string }
+        query: { type: string }
+        expected:
+          type: string
+          enum: [grounded, abstained, blocked]
+        explanation: { type: string }
+      required: [id, query, expected, explanation]
+    DashboardSummary:
+      type: object
+      properties:
+        mode: { type: string }
+        scenarioCount: { type: integer }
+        knowledgeDocumentCount: { type: integer }
+        evaluationCaseCount: { type: integer }
+        latestTraces:
+          type: array
+          items: { $ref: "#/components/schemas/Trace" }
+      required: [mode, scenarioCount, knowledgeDocumentCount, evaluationCaseCount, latestTraces]
+    DatasetColumn:
+      type: object
+      properties:
+        name: { type: string }
+        type: { type: string }
+        nullable: { type: boolean }
+        description: { type: string }
+      required: [name, type, nullable, description]
+    Dataset:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        category: { type: string }
+        owner: { type: string }
+        sourceSystem: { type: string }
+        classification: { type: string }
+        retentionCategory: { type: string }
+        updateFrequency: { type: string }
+        status: { type: string, enum: [active, archived] }
+        recordCount: { type: integer }
+        schemaVersion: { type: integer }
+        qualityStatus: { type: string, enum: [pass, warning, failed, unverified] }
+        latestVersion: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+        columns:
+          type: array
+          items: { $ref: "#/components/schemas/DatasetColumn" }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+      required: [id, name, description, category, owner, sourceSystem, classification, retentionCategory, updateFrequency, status, recordCount, schemaVersion, qualityStatus, latestVersion, tags, columns, createdAt, updatedAt]
+    DatasetRecord:
+      type: object
+      additionalProperties: true
+    DatasetPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Dataset" }
+        page: { type: integer }
+        pageSize: { type: integer }
+        total: { type: integer }
+        records:
+          type: array
+          items: { $ref: "#/components/schemas/DatasetRecord" }
+      required: [items, page, pageSize, total, records]
+    DatasetDetail:
+      type: object
+      properties:
+        dataset: { $ref: "#/components/schemas/Dataset" }
+        sampleRecords:
+          type: array
+          items: { $ref: "#/components/schemas/DatasetRecord" }
+      required: [dataset, sampleRecords]
+    DataCatalogSummary:
+      type: object
+      properties:
+        datasetCount: { type: integer }
+        activeCount: { type: integer }
+        archivedCount: { type: integer }
+        totalRecords: { type: integer }
+        qualityFailures: { type: integer }
+        recentEvents:
+          type: array
+          items: { $ref: "#/components/schemas/LineageEvent" }
+      required: [datasetCount, activeCount, archivedCount, totalRecords, qualityFailures, recentEvents]
+    DatasetVersion:
+      type: object
+      properties:
+        id: { type: string }
+        version: { type: integer }
+        recordCount: { type: integer }
+        schemaVersion: { type: integer }
+        qualityStatus: { type: string, enum: [pass, warning, failed, unverified] }
+        changeSummary: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, version, recordCount, schemaVersion, qualityStatus, changeSummary, createdAt]
+    LineageEvent:
+      type: object
+      properties:
+        id: { type: string }
+        sourceLabel: { type: string }
+        targetLabel: { type: string }
+        relation: { type: string }
+        detail: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, sourceLabel, targetLabel, relation, detail, createdAt]
+    DatasetImportInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        category: { type: string, minLength: 1, maxLength: 80 }
+        description: { type: string, maxLength: 500 }
+        csvText: { type: string, minLength: 1, maxLength: 1500000 }
+        sourceFileName: { type: string, maxLength: 200 }
+      required: [name, category, csvText]
+    DatasetImportResult:
+      type: object
+      properties:
+        dataset: { $ref: "#/components/schemas/Dataset" }
+        importedRecords: { type: integer }
+        rejectedRecords: { type: integer }
+        warnings:
+          type: array
+          items: { type: string }
+      required: [dataset, importedRecords, rejectedRecords, warnings]
+    DatasetMetadataUpdate:
+      type: object
+      properties:
+        description: { type: string, maxLength: 500 }
+        owner: { type: string, maxLength: 120 }
+        category: { type: string, maxLength: 80 }
+        classification: { type: string, enum: [public_demo, internal_synthetic, restricted_demo, confidential_test] }
+        retentionCategory: { type: string, maxLength: 80 }
+        tags:
+          type: array
+          maxItems: 20
+          items: { type: string, maxLength: 40 }
+    QualityDimension:
+      type: object
+      properties:
+        name: { type: string }
+        status: { type: string, enum: [pass, warning, failed, unverified] }
+        score: { type: ["number", "null"] }
+        details: { type: string }
+      required: [name, status, score, details]
+    QualityIssue:
+      type: object
+      properties:
+        field: { type: string }
+        rule: { type: string }
+        severity: { type: string, enum: [low, medium, high] }
+        failedRecords: { type: integer }
+        sampleValue: { type: ["string", "null"] }
+      required: [field, rule, severity, failedRecords, sampleValue]
+    QualityReport:
+      type: object
+      properties:
+        datasetId: { type: string }
+        version: { type: integer }
+        recordsChecked: { type: integer }
+        passedRecords: { type: integer }
+        failedRecords: { type: integer }
+        failureRate: { type: number }
+        dimensions:
+          type: array
+          items: { $ref: "#/components/schemas/QualityDimension" }
+        issues:
+          type: array
+          items: { $ref: "#/components/schemas/QualityIssue" }
+        generatedAt: { type: string, format: date-time }
+        accuracyNote: { type: string }
+      required: [datasetId, version, recordsChecked, passedRecords, failedRecords, failureRate, dimensions, issues, generatedAt, accuracyNote]
+    PipelineStep:
+      type: object
+      properties:
+        operation:
+          type: string
+          enum: [select_columns, rename_column, filter_equals, remove_duplicates, require_field, aggregate_count]
+        column: { type: string, maxLength: 100 }
+        columns:
+          type: array
+          maxItems: 100
+          items: { type: string, maxLength: 100 }
+        newName: { type: string, maxLength: 100 }
+        value: { type: string, maxLength: 200 }
+      required: [operation]
+    PipelineExecutionInput:
+      type: object
+      properties:
+        sourceDatasetId: { type: string, minLength: 1, maxLength: 80 }
+        name: { type: string, minLength: 1, maxLength: 100 }
+        steps:
+          type: array
+          minItems: 1
+          maxItems: 10
+          items: { $ref: "#/components/schemas/PipelineStep" }
+      required: [sourceDatasetId, name, steps]
+    PipelineRun:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        status: { type: string, enum: [succeeded, failed] }
+        sourceDatasetId: { type: string }
+        outputDatasetId: { type: ["string", "null"] }
+        recordsProcessed: { type: integer }
+        recordsRejected: { type: integer }
+        durationMs: { type: integer }
+        message: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, name, status, sourceDatasetId, outputDatasetId, recordsProcessed, recordsRejected, durationMs, message, createdAt]
+    DataAnalystInput:
+      type: object
+      properties:
+        datasetId: { type: string, minLength: 1, maxLength: 80 }
+        question: { type: string, minLength: 1, maxLength: 500 }
+      required: [datasetId, question]
+    DataAnalystResult:
+      type: object
+      properties:
+        datasetId: { type: string }
+        datasetName: { type: string }
+        datasetVersion: { type: integer }
+        question: { type: string }
+        answer: { type: string }
+        method: { type: string }
+        evidence:
+          type: array
+          items: { type: string }
+        limitations:
+          type: array
+          items: { type: string }
+        rowsExamined: { type: integer }
+        generatedAt: { type: string, format: date-time }
+      required: [datasetId, datasetName, datasetVersion, question, answer, method, evidence, limitations, rowsExamined, generatedAt]
+    DataObservability:
+      type: object
+      properties:
+        datasetCount: { type: integer }
+        staleDatasets: { type: integer }
+        failedDatasets: { type: integer }
+        recentImports: { type: integer }
+        lastUpdatedAt: { type: ["string", "null"], format: date-time }
+        status: { type: string, enum: [healthy, attention, empty] }
+      required: [datasetCount, staleDatasets, failedDatasets, recentImports, lastUpdatedAt, status]

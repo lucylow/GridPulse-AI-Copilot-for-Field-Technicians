@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "GridPulse Copilot"
+description = "A synthetic utility-operations training simulation for traceable incident briefs, knowledge retrieval, data quality, and human-reviewed analytics. Not for live grid operations."
+version = "1.0.0"
+id = "artifacts/gridpulse-copilot"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19075
+
+[services.development]
+run = "pnpm --filter @workspace/gridpulse-copilot run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/gridpulse-copilot", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/gridpulse-copilot/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19075"
+BASE_PATH = "/"

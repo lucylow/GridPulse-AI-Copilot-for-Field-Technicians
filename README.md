@@ -11,6 +11,7 @@
   <a href="https://canva.link/cgehqgif9epxcnp">Project presentation</a>
 </p>
 
+![](https://github.com/lucylow/GridPulse-AI-Copilot-for-Field-Technicians/blob/main/Screenshot%20(1985).png?raw=true)
 ---
 
 ## Table of contents
